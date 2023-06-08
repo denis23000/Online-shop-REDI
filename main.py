@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from typing import List
 from fastapi import FastAPI, HTTPException, status
 from fastapi.encoders import jsonable_encoder
-
+from bson.objectid import ObjectId
 import class_Product
 import class_User
 import class_Cart
@@ -27,12 +27,12 @@ order_collection = db.orders
 @app.get('/products')
 def get_products():
     products = collection.find()
-    return {'products': products}
+    return {'products': list(products)}
 
 
 @app.get('/products/{product_id}')
-def get_product_by_ID(product_id: str):
-    product = collection.find_one({'id': product_id})
+def get_product_by_ID(product_id: ObjectId):
+    product = collection.find_one({'_id': product_id})
     if product:
         return {'product': product}
     else:
@@ -47,8 +47,8 @@ def create_product(product: class_Product.Product):
 
 
 @app.put('/products/{product_id}')
-def update_product(product_id: str, updated_product: class_Product.Product):
-    result = collection.update_one({'id': product_id}, {'$set': updated_product})
+def update_product(product_id: ObjectId, updated_product: class_Product.Product):
+    result = collection.update_one({'_id': product_id}, {'$set': updated_product})
     if result.modified_count == 1:
         return {'message': 'Product updated'}
     else:
@@ -56,8 +56,8 @@ def update_product(product_id: str, updated_product: class_Product.Product):
 
 
 @app.delete('/products/{product_id}')
-def delete_product(product_id: str):
-    result = collection.delete_one({'id': product_id})
+def delete_product(product_id: ObjectId):
+    result = collection.delete_one({'_id': product_id})
     if result.deleted_count == 1:
         return {'message': 'Product deleted'}
     else:
@@ -72,8 +72,8 @@ def get_users():
 
 
 @app.get('/users/{user_id}')
-def get_user_by_ID(user_id: str):
-    user = user_collection.find_one({'id': user_id})
+def get_user_by_ID(user_id: ObjectId):
+    user = user_collection.find_one({'_id': user_id})
     if user:
         return {'user': user}
     else:
@@ -88,7 +88,7 @@ def create_user(user: class_User.User):
 
 
 @app.put('/users/{user_id}')
-def update_user(user_id: str, updated_user: class_User.User):
+def update_user(user_id: ObjectId, updated_user: class_User.User):
     result = user_collection.update_one({'id': user_id}, {'$set': updated_user})
     if result.modified_count == 1:
         return {'message': 'user updated'}
@@ -97,7 +97,7 @@ def update_user(user_id: str, updated_user: class_User.User):
 
 
 @app.delete('/users/{user_id}')
-def delete_user(user_id: str):
+def delete_user(user_id: ObjectId):
     result = user_collection.delete_one({'id': user_id})
     if result.deleted_count == 1:
         return {'message': 'user deleted'}
@@ -107,8 +107,8 @@ def delete_user(user_id: str):
 # cart functions ----------------------------------------------------------------------------------------------
 
 @app.post('/orders')
-def create_order(user: class_User.User, product: class_Product.Product):
-    dict_order = {'user_id': user.id, 'name': user.name, 'product_id': product.id, 'title': product.title}
+def create_order(user_id: ObjectId, product_id: ObjectId):
+    dict_order = {'user_id': user_id, 'product_id': product_id}
     inserted_order = order_collection.insert_one(dict_order)
     return {'message': 'order created', 'order_id': str(inserted_order.inserted_id)}
 
@@ -119,16 +119,16 @@ def get_orders():
     return {'orders': orders}
 
 @app.get('/orders/{user_id}')
-def get_orders_by_user(user_id: str):
-    orders = order_collection.find({'id': user_id})
+def get_orders_by_user(user_id: ObjectId):
+    orders = order_collection.find({'_id': user_id})
     if orders:
         return {'order': orders}
     else:
         return {'message': 'Cart not found'}
 
 @app.delete('/orders/{order_id}')
-def delete_order(user_id: str):
-    result = user_collection.delete_one({'id': user_id})
+def delete_order(user_id: ObjectId):
+    result = user_collection.delete_one({'_id': user_id})
     if result.deleted_count == 1:
         return {'message': 'user deleted'}
     else:

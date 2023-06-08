@@ -2,7 +2,8 @@ from pydantic import BaseModel, Field
 import uuid
 
 class Product(BaseModel):
-  id: str = Field(default_factory=uuid.uuid4, alias="_id")
-  title: str
-  description: str
-  price: str
+  def __init__(self, id, title, description, price):
+      self.id = id
+      self.title = title
+      self.description = description
+      self.price = price

@@ -4,8 +4,11 @@ import uuid
 # Cart ---------------------------------------------------------------------------------------------
 
 class Order(BaseModel):
-  id: str = Field(default_factory=uuid.uuid4, alias="_id")
-  user_id: str
-  product_id: str
-  product_name: str
+  def __init__(self, id, user_id, product_id):
+    self.id = id
+    self.user_id = user_id
+    self.product_id = product_id
+
+
+
 
