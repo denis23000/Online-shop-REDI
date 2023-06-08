@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from typing import List
 from fastapi import FastAPI, HTTPException, status
 from fastapi.encoders import jsonable_encoder
-from bson.objectid import ObjectId
+from bson import ObjectId
 import class_Product
 import class_User
 import class_Cart
@@ -26,13 +26,15 @@ order_collection = db.orders
 
 @app.get('/products')
 def get_products():
-    products = collection.find()
+    projection = {'_id': False, 'title': True, 'description': True, 'price': True}
+    products = collection.find({}, projection)
     return {'products': list(products)}
 
 
 @app.get('/products/{product_id}')
-def get_product_by_ID(product_id: ObjectId):
-    product = collection.find_one({'_id': product_id})
+def get_product_by_ID(product_id: str):
+    object_id = ObjectId(product_id)
+    product = collection.find_one({'_id': object_id})
     if product:
         return {'product': product}
     else:
@@ -41,13 +43,13 @@ def get_product_by_ID(product_id: ObjectId):
 
 @app.post('/products')
 def create_product(product: class_Product.Product):
-    dict_product = {'id': product.id, 'title': product.title, 'description': product.description, 'price': product.price}
+    dict_product = {'title': product.title, 'description': product.description, 'price': product.price}
     inserted_product = collection.insert_one(dict_product)
     return {'message': 'Product created', 'product_id': str(inserted_product.inserted_id)}
 
 
 @app.put('/products/{product_id}')
-def update_product(product_id: ObjectId, updated_product: class_Product.Product):
+def update_product(product_id: str, updated_product: class_Product.Product):
     result = collection.update_one({'_id': product_id}, {'$set': updated_product})
     if result.modified_count == 1:
         return {'message': 'Product updated'}
@@ -56,7 +58,7 @@ def update_product(product_id: ObjectId, updated_product: class_Product.Product)
 
 
 @app.delete('/products/{product_id}')
-def delete_product(product_id: ObjectId):
+def delete_product(product_id: str):
     result = collection.delete_one({'_id': product_id})
     if result.deleted_count == 1:
         return {'message': 'Product deleted'}
@@ -68,11 +70,11 @@ def delete_product(product_id: ObjectId):
 @app.get('/users')
 def get_users():
     users = user_collection.find()
-    return {'users': users}
+    return {'users': list(users)}
 
 
 @app.get('/users/{user_id}')
-def get_user_by_ID(user_id: ObjectId):
+def get_user_by_ID(user_id: str):
     user = user_collection.find_one({'_id': user_id})
     if user:
         return {'user': user}
@@ -82,14 +84,14 @@ def get_user_by_ID(user_id: ObjectId):
 
 @app.post('/users')
 def create_user(user: class_User.User):
-    dict_user = {'id': user.id, 'name': user.name, 'email': user.email}
+    dict_user = {'name': user.name, 'email': user.email}
     inserted_user = user_collection.insert_one(dict_user)
     return {'message': 'user created', 'user_id': str(inserted_user.inserted_id)}
 
 
 @app.put('/users/{user_id}')
-def update_user(user_id: ObjectId, updated_user: class_User.User):
-    result = user_collection.update_one({'id': user_id}, {'$set': updated_user})
+def update_user(user_id: str, updated_user: class_User.User):
+    result = user_collection.update_one({'_id': user_id}, {'$set': updated_user})
     if result.modified_count == 1:
         return {'message': 'user updated'}
     else:
@@ -97,8 +99,8 @@ def update_user(user_id: ObjectId, updated_user: class_User.User):
 
 
 @app.delete('/users/{user_id}')
-def delete_user(user_id: ObjectId):
-    result = user_collection.delete_one({'id': user_id})
+def delete_user(user_id: str):
+    result = user_collection.delete_one({'_id': user_id})
     if result.deleted_count == 1:
         return {'message': 'user deleted'}
     else:
@@ -107,8 +109,8 @@ def delete_user(user_id: ObjectId):
 # cart functions ----------------------------------------------------------------------------------------------
 
 @app.post('/orders')
-def create_order(user_id: ObjectId, product_id: ObjectId):
-    dict_order = {'user_id': user_id, 'product_id': product_id}
+def create_order(order: class_Cart.Order):
+    dict_order = {'user_id': order.user_id, 'product_id': order.product_id}
     inserted_order = order_collection.insert_one(dict_order)
     return {'message': 'order created', 'order_id': str(inserted_order.inserted_id)}
 
@@ -119,7 +121,7 @@ def get_orders():
     return {'orders': orders}
 
 @app.get('/orders/{user_id}')
-def get_orders_by_user(user_id: ObjectId):
+def get_orders_by_user(user_id: str):
     orders = order_collection.find({'_id': user_id})
     if orders:
         return {'order': orders}
@@ -127,7 +129,7 @@ def get_orders_by_user(user_id: ObjectId):
         return {'message': 'Cart not found'}
 
 @app.delete('/orders/{order_id}')
-def delete_order(user_id: ObjectId):
+def delete_order(user_id: str):
     result = user_collection.delete_one({'_id': user_id})
     if result.deleted_count == 1:
         return {'message': 'user deleted'}
@@ -138,7 +140,6 @@ def delete_order(user_id: ObjectId):
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host='0.0.0.0', port=8000)
-
 
 
 
