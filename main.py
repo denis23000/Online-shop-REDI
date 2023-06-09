@@ -34,12 +34,11 @@ def get_products():
 @app.get('/products/{product_id}')
 def get_product_by_ID(product_id: str):
     object_id = ObjectId(product_id)
-    product = collection.find_one({'_id': object_id})
+    product = collection.find_one({'_id': object_id}, {'_id': 0})
     if product:
         return {'product': product}
     else:
         return {'message': 'Product not found'}
-
 
 @app.post('/products')
 def create_product(product: class_Product.Product):
@@ -50,16 +49,21 @@ def create_product(product: class_Product.Product):
 
 @app.put('/products/{product_id}')
 def update_product(product_id: str, updated_product: class_Product.Product):
-    result = collection.update_one({'_id': product_id}, {'$set': updated_product})
+    object_id = ObjectId(product_id)
+    json = jsonable_encoder(updated_product)
+    result = collection.update_one({'_id': object_id}, {'$set': json})
     if result.modified_count == 1:
         return {'message': 'Product updated'}
     else:
         return {'message': 'Product not found'}
 
 
+
+
 @app.delete('/products/{product_id}')
 def delete_product(product_id: str):
-    result = collection.delete_one({'_id': product_id})
+    object_id = ObjectId(product_id)
+    result = collection.delete_one({'_id': object_id}, {'_id': 0})
     if result.deleted_count == 1:
         return {'message': 'Product deleted'}
     else:
@@ -69,13 +73,15 @@ def delete_product(product_id: str):
 
 @app.get('/users')
 def get_users():
-    users = user_collection.find()
+    projection = {'_id': False, 'name': True, 'email': True}
+    users = user_collection.find({}, projection)
     return {'users': list(users)}
 
 
 @app.get('/users/{user_id}')
 def get_user_by_ID(user_id: str):
-    user = user_collection.find_one({'_id': user_id})
+    object_id = ObjectId(user_id)
+    user = user_collection.find_one({'_id': object_id}, {'_id': 0})
     if user:
         return {'user': user}
     else:
@@ -117,12 +123,13 @@ def create_order(order: class_Cart.Order):
 
 @app.get('/orders')
 def get_orders():
-    orders = order_collection.find()
-    return {'orders': orders}
+    projection = {'_id': False, 'user_id': True, 'product_id': True}
+    orders = order_collection.find({}, projection)
+    return {'orders': list(orders)}
 
 @app.get('/orders/{user_id}')
 def get_orders_by_user(user_id: str):
-    orders = order_collection.find({'_id': user_id})
+    orders = order_collection.find_one({'user_id': user_id}, {'_id': 0})
     if orders:
         return {'order': orders}
     else:
